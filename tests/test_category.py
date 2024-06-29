@@ -110,6 +110,10 @@ def test_update_category_should_return_200_and_updated_data(session, client):
     assert response.json()["result"]["public_id"] == category.public_id
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
+    assert (
+        response.json()["result"]["updated_at"]
+        != response.json()["result"]["created_at"]
+    )
 
 
 def test_delete_category_should_return_200_and_deleted_message(

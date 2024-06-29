@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 
 from ..models.exceptions.category import CategoryNameAlreadyExists
 from ..models.exceptions.resource import InvalidId, ResourceNotFound
+from ..models.exceptions.tag import InvalidTagName, TagNameAlreadyExists
 
 
 def include_exceptions(app: FastAPI):
@@ -49,6 +50,32 @@ def include_exceptions(app: FastAPI):
 
     @app.exception_handler(CategoryNameAlreadyExists)
     async def category_name_already_exists_handler(request, exc):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "exc": exc.__class__.__name__,
+                "error_code": exc.error_code,
+                "detail": exc.detail,
+                "url": request.url.path,
+            },
+            headers={"X-Error-Code": exc.error_code},
+        )
+
+    @app.exception_handler(TagNameAlreadyExists)
+    async def tag_name_already_exists_handler(request, exc):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "exc": exc.__class__.__name__,
+                "error_code": exc.error_code,
+                "detail": exc.detail,
+                "url": request.url.path,
+            },
+            headers={"X-Error-Code": exc.error_code},
+        )
+
+    @app.exception_handler(InvalidTagName)
+    async def invalid_tag_name_handler(request, exc):
         return JSONResponse(
             status_code=exc.status_code,
             content={

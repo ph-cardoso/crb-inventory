@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 class AppResource(Enum):
     CATEGORY = "category"
+    TAG = "tag"
 
 
 class ResourceDeletedMessage(BaseModel):
