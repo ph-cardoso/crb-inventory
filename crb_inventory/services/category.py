@@ -5,10 +5,10 @@ from ..database_schema import Category
 from ..models.category import (
     CategoryCreateRequest,
     CategoryListResponse,
-    CategoryPublic,
     CategoryResponse,
 )
-from ..models.exceptions.resource_utils import InvalidId, ResourceNotFound
+from ..models.exceptions.category import CategoryNameAlreadyExists
+from ..models.exceptions.resource import InvalidId, ResourceNotFound
 from ..models.utils import AppResource, ResourceDeletedMessage
 from ..services.utils import validate_uuid
 
@@ -41,20 +41,8 @@ def read_categories(
     total_count = session.scalar(total_count_query)
     categories = session.execute(categories_query)
 
-    categories_result = [
-        CategoryPublic(
-            public_id=category.public_id,
-            name=category.name,
-            description=category.description,
-            is_active=category.is_active,
-            created_at=category.created_at,
-            updated_at=category.updated_at,
-        )
-        for category in categories
-    ]
-
     return CategoryListResponse(
-        result=categories_result,
+        result=categories,
         total=total_count,
         page=page,
         page_size=page_size,
@@ -76,47 +64,29 @@ def read_category(
             resource=AppResource.CATEGORY
         )  # pragma: no cover
 
-    category_result = CategoryPublic(
-        public_id=category.public_id,
-        name=category.name,
-        description=category.description,
-        is_active=category.is_active,
-        created_at=category.created_at,
-        updated_at=category.updated_at,
-    )
-
-    return CategoryResponse(result=category_result)
+    return CategoryResponse(result=category)
 
 
 def create_category(
     body: CategoryCreateRequest,
     session: Session,
 ) -> CategoryResponse:
+    category_query_by_name = select(Category).where(Category.name == body.name)
+    category_by_name = session.scalar(category_query_by_name)
+
+    if category_by_name:
+        raise CategoryNameAlreadyExists()  # pragma: no cover
+
     category = Category(
         name=body.name,
         description=body.description,
     )
 
-    category_exists = (
-        session.query(Category).filter(Category.name == category.name).first()
-    )
-
-    if category_exists:
-        raise ValueError("Category name already exists")  # pragma: no cover
-
     session.add(category)
     session.commit()
     session.refresh(category)
 
-    category_result = CategoryPublic(
-        public_id=category.public_id,
-        name=category.name,
-        description=category.description,
-        is_active=category.is_active,
-        created_at=category.created_at,
-        updated_at=category.updated_at,
-    )
-    return CategoryResponse(result=category_result)
+    return CategoryResponse(result=category)
 
 
 def update_category(
@@ -135,6 +105,14 @@ def update_category(
             resource=AppResource.CATEGORY
         )  # pragma: no cover
 
+    category_query_by_name = select(Category).where(
+        Category.name == body.name and Category.public_id != category_id
+    )
+    category_by_name = session.scalar(category_query_by_name)
+
+    if category_by_name:
+        raise CategoryNameAlreadyExists()  # pragma: no cover
+
     category.name = body.name
     category.description = body.description
     category.is_active = body.is_active
@@ -142,16 +120,7 @@ def update_category(
     session.commit()
     session.refresh(category)
 
-    category_result = CategoryPublic(
-        public_id=category.public_id,
-        name=category.name,
-        description=category.description,
-        is_active=category.is_active,
-        created_at=category.created_at,
-        updated_at=category.updated_at,
-    )
-
-    return CategoryResponse(result=category_result)
+    return CategoryResponse(result=category)
 
 
 def delete_category(
