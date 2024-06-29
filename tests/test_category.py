@@ -151,3 +151,23 @@ def test_invalid_id_exception_should_return_400(client):
         == f"Invalid resource ID. UUID v4 expected, but got {invalid_id}."
     )
     assert response.headers["X-Error-Code"] == "002"
+
+
+def test_category_name_already_exists_exception_should_return_422(
+    session, client
+):
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    category_data = {
+        "name": category.name,
+    }
+
+    response = client.post("/v1/category/", json=category_data)
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.json()["exc"] == "CategoryNameAlreadyExists"
+    assert response.json()["detail"] == "Category name already exists."
+    assert response.headers["X-Error-Code"] == "003"
+    assert response.json()["url"] == "/v1/category/"
