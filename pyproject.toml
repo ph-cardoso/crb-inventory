@@ -46,6 +46,7 @@ test = 'pytest -s -x --cov=crb_inventory -vv'
 post_test = 'coverage html'
 local-env-up = 'docker compose --env-file env/local.env -f compose.yml up -d'
 local-env-down = 'docker compose --env-file env/local.env -f compose.yml down'
+clean = "rm -rf .coverage htmlcov .ruff_cache .pytest_cache"
 
 [build-system]
 requires = ["poetry-core"]
