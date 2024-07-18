@@ -6,7 +6,6 @@ from sqlalchemy.dialects.postgresql import BOOLEAN, TEXT, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, registry
 
-# Use pydantic dataclasses
 mapper_registry = registry()
 
 
@@ -14,21 +13,70 @@ mapper_registry = registry()
 @mapper_registry.mapped_as_dataclass
 class Category:
     __tablename__ = "category"
-    id: Mapped[int] = mapped_column(
-        init=False,
-        primary_key=True,
-        autoincrement=True,
-        nullable=False,
-    )
-    public_id: Mapped[str] = mapped_column(
+    id: Mapped[str] = mapped_column(
         PG_UUID(as_uuid=False),
-        init=False,
-        unique=True,
-        index=True,
-        server_default=func.gen_random_uuid(),
+        primary_key=True,
         nullable=False,
     )
-    name: Mapped[str] = mapped_column(TEXT, unique=True)
+    name: Mapped[str] = mapped_column(TEXT, unique=True, index=True)
+    description: Mapped[Optional[str]] = mapped_column(TEXT, nullable=True)
+    is_active: Mapped[bool] = mapped_column(
+        BOOLEAN, init=False, server_default="true"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        init=False,
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        init=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+# tag table
+@mapper_registry.mapped_as_dataclass
+class Tag:
+    __tablename__ = "tag"
+    id: Mapped[str] = mapped_column(
+        PG_UUID(as_uuid=False),
+        primary_key=True,
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(TEXT, unique=True, index=True)
+    description: Mapped[Optional[str]] = mapped_column(TEXT, nullable=True)
+    is_active: Mapped[bool] = mapped_column(
+        BOOLEAN, init=False, server_default="true"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        init=False,
+        server_default=func.now(),
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        init=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+
+# custom_fields table
+@mapper_registry.mapped_as_dataclass
+class CustomField:
+    __tablename__ = "custom_field"
+    id: Mapped[str] = mapped_column(
+        PG_UUID(as_uuid=False),
+        primary_key=True,
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(TEXT, unique=True, index=True)
     description: Mapped[Optional[str]] = mapped_column(TEXT, nullable=True)
     is_active: Mapped[bool] = mapped_column(
         BOOLEAN, init=False, server_default="true"

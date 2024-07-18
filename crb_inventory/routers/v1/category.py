@@ -26,7 +26,7 @@ router = APIRouter(prefix="/category", tags=["category"])
     "/",
     status_code=HTTPStatus.OK,
     response_model=CategoryListResponse,
-    summary="Get categories list",
+    summary="Get category list",
 )
 async def read_categories_endpoint(
     page: int = Query(1, ge=1, description="Page number"),

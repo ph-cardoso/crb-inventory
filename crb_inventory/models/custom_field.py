@@ -4,7 +4,7 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
 
-class CategoryModel(BaseModel):
+class CustomFieldModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: str
     name: str
@@ -14,23 +14,23 @@ class CategoryModel(BaseModel):
     updated_at: datetime
 
 
-class CategoryListResponse(BaseModel):
-    result: List[CategoryModel]
+class CustomFieldListResponse(BaseModel):
+    result: List[CustomFieldModel]
     total: int
     page: int
     page_size: int
 
 
-class CategoryResponse(BaseModel):
-    result: CategoryModel
+class CustomFieldResponse(BaseModel):
+    result: CustomFieldModel
 
 
-class CategoryCreateRequest(BaseModel):
+class CustomFieldCreateRequest(BaseModel):
     name: str
     description: Optional[str] = None
 
 
-class CategoryUpdateRequest(BaseModel):
+class CustomFieldUpdateRequest(BaseModel):
     name: str
     description: Optional[str] = None
     is_active: bool
