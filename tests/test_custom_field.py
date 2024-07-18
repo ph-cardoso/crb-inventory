@@ -75,7 +75,7 @@ def test_create_custom_field_should_return_201_and_generated_data(client):
         == custom_field_data["description"]
     )
     assert response.json()["result"]["is_active"] is True
-    assert "public_id" in response.json()["result"]
+    assert "id" in response.json()["result"]
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
 
@@ -88,13 +88,13 @@ def test_read_custom_field_should_return_200_and_generated_data(
     session.add(custom_field)
     session.commit()
 
-    response = client.get(f"{route}{custom_field.public_id}")
+    response = client.get(f"{route}{custom_field.id}")
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["result"]["name"] == custom_field.name
     assert response.json()["result"]["description"] == custom_field.description
     assert response.json()["result"]["is_active"] == custom_field.is_active
-    assert response.json()["result"]["public_id"] == custom_field.public_id
+    assert response.json()["result"]["id"] == custom_field.id
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
 
@@ -113,9 +113,7 @@ def test_update_custom_field_should_return_200_and_updated_data(
         "is_active": False,
     }
 
-    response = client.put(
-        f"{route}{custom_field.public_id}", json=custom_field_data
-    )
+    response = client.put(f"{route}{custom_field.id}", json=custom_field_data)
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["result"]["name"] == custom_field_data["name"]
@@ -127,7 +125,7 @@ def test_update_custom_field_should_return_200_and_updated_data(
         response.json()["result"]["is_active"]
         == custom_field_data["is_active"]
     )
-    assert response.json()["result"]["public_id"] == custom_field.public_id
+    assert response.json()["result"]["id"] == custom_field.id
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
     assert (
@@ -144,11 +142,11 @@ def test_delete_custom_field_should_return_200_and_deleted_message(
     session.add(custom_field)
     session.commit()
 
-    response = client.delete(f"{route}{custom_field.public_id}")
+    response = client.delete(f"{route}{custom_field.id}")
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["message"] == "Resource deleted successfully."
-    assert response.json()["public_id"] == custom_field.public_id
+    assert response.json()["id"] == custom_field.id
     assert response.json()["resource"] == AppResource.CUSTOM_FIELD.value
 
 

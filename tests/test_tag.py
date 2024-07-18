@@ -68,7 +68,7 @@ def test_create_tag_should_return_201_and_generated_data(client):
     assert response.json()["result"]["name"] == tag_data["name"]
     assert response.json()["result"]["description"] == tag_data["description"]
     assert response.json()["result"]["is_active"] is True
-    assert "public_id" in response.json()["result"]
+    assert "id" in response.json()["result"]
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
 
@@ -79,13 +79,13 @@ def test_read_tag_should_return_200_and_generated_data(session, client):
     session.add(tag)
     session.commit()
 
-    response = client.get(f"{route}{tag.public_id}")
+    response = client.get(f"{route}{tag.id}")
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["result"]["name"] == tag.name
     assert response.json()["result"]["description"] == tag.description
     assert response.json()["result"]["is_active"] == tag.is_active
-    assert response.json()["result"]["public_id"] == tag.public_id
+    assert response.json()["result"]["id"] == tag.id
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
 
@@ -102,13 +102,13 @@ def test_update_tag_should_return_200_and_updated_data(session, client):
         "is_active": False,
     }
 
-    response = client.put(f"{route}{tag.public_id}", json=tag_data)
+    response = client.put(f"{route}{tag.id}", json=tag_data)
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["result"]["name"] == tag_data["name"]
     assert response.json()["result"]["description"] == tag_data["description"]
     assert response.json()["result"]["is_active"] == tag_data["is_active"]
-    assert response.json()["result"]["public_id"] == tag.public_id
+    assert response.json()["result"]["id"] == tag.id
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
     assert (
@@ -123,11 +123,11 @@ def test_delete_tag_should_return_200_and_deleted_message(session, client):
     session.add(tag)
     session.commit()
 
-    response = client.delete(f"{route}{tag.public_id}")
+    response = client.delete(f"{route}{tag.id}")
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["message"] == "Resource deleted successfully."
-    assert response.json()["public_id"] == tag.public_id
+    assert response.json()["id"] == tag.id
     assert response.json()["resource"] == AppResource.TAG.value
 
 

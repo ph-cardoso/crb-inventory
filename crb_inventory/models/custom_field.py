@@ -4,9 +4,9 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
 
-class CustomFieldPublic(BaseModel):
+class CustomFieldModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    public_id: str
+    id: str
     name: str
     description: Optional[str] = None
     is_active: bool
@@ -15,14 +15,14 @@ class CustomFieldPublic(BaseModel):
 
 
 class CustomFieldListResponse(BaseModel):
-    result: List[CustomFieldPublic]
+    result: List[CustomFieldModel]
     total: int
     page: int
     page_size: int
 
 
 class CustomFieldResponse(BaseModel):
-    result: CustomFieldPublic
+    result: CustomFieldModel
 
 
 class CustomFieldCreateRequest(BaseModel):

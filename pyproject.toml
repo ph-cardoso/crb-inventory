@@ -12,6 +12,7 @@ sqlalchemy = "^2.0.31"
 psycopg2-binary = "^2.9.9"
 pydantic-settings = "^2.3.4"
 alembic = "^1.13.2"
+uuid-utils = "^0.9.0"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -44,8 +45,8 @@ dev = 'fastapi dev crb_inventory/main.py'
 pre_test = 'task lint'
 test = 'pytest -s -x --cov=crb_inventory -vv'
 post_test = 'coverage html'
-local-env-up = 'docker compose --env-file env/local.env -f compose.yml up -d'
-local-env-down = 'docker compose --env-file env/local.env -f compose.yml down'
+local-env-up = 'docker compose --env-file .env -f compose.yml up -d'
+local-env-down = 'docker compose --env-file .env -f compose.yml down'
 clean = "rm -rf .coverage htmlcov .ruff_cache .pytest_cache"
 
 [build-system]

@@ -72,7 +72,7 @@ def test_create_category_should_return_201_and_generated_data(client):
         == category_data["description"]
     )
     assert response.json()["result"]["is_active"] is True
-    assert "public_id" in response.json()["result"]
+    assert "id" in response.json()["result"]
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
 
@@ -83,13 +83,13 @@ def test_read_category_should_return_200_and_generated_data(session, client):
     session.add(category)
     session.commit()
 
-    response = client.get(f"{route}{category.public_id}")
+    response = client.get(f"{route}{category.id}")
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["result"]["name"] == category.name
     assert response.json()["result"]["description"] == category.description
     assert response.json()["result"]["is_active"] == category.is_active
-    assert response.json()["result"]["public_id"] == category.public_id
+    assert response.json()["result"]["id"] == category.id
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
 
@@ -106,7 +106,7 @@ def test_update_category_should_return_200_and_updated_data(session, client):
         "is_active": False,
     }
 
-    response = client.put(f"{route}{category.public_id}", json=category_data)
+    response = client.put(f"{route}{category.id}", json=category_data)
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["result"]["name"] == category_data["name"]
@@ -115,7 +115,7 @@ def test_update_category_should_return_200_and_updated_data(session, client):
         == category_data["description"]
     )
     assert response.json()["result"]["is_active"] == category_data["is_active"]
-    assert response.json()["result"]["public_id"] == category.public_id
+    assert response.json()["result"]["id"] == category.id
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
     assert (
@@ -132,11 +132,11 @@ def test_delete_category_should_return_200_and_deleted_message(
     session.add(category)
     session.commit()
 
-    response = client.delete(f"{route}{category.public_id}")
+    response = client.delete(f"{route}{category.id}")
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["message"] == "Resource deleted successfully."
-    assert response.json()["public_id"] == category.public_id
+    assert response.json()["id"] == category.id
     assert response.json()["resource"] == AppResource.CATEGORY.value
 
 

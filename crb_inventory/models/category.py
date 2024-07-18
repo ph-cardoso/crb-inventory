@@ -4,9 +4,9 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
 
-class CategoryPublic(BaseModel):
+class CategoryModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    public_id: str
+    id: str
     name: str
     description: Optional[str] = None
     is_active: bool
@@ -15,14 +15,14 @@ class CategoryPublic(BaseModel):
 
 
 class CategoryListResponse(BaseModel):
-    result: List[CategoryPublic]
+    result: List[CategoryModel]
     total: int
     page: int
     page_size: int
 
 
 class CategoryResponse(BaseModel):
-    result: CategoryPublic
+    result: CategoryModel
 
 
 class CategoryCreateRequest(BaseModel):

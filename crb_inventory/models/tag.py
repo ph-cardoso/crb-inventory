@@ -4,9 +4,9 @@ from typing import List, Optional
 from pydantic import BaseModel, ConfigDict
 
 
-class TagPublic(BaseModel):
+class TagModel(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    public_id: str
+    id: str
     name: str
     description: Optional[str] = None
     is_active: bool
@@ -15,14 +15,14 @@ class TagPublic(BaseModel):
 
 
 class TagListResponse(BaseModel):
-    result: List[TagPublic]
+    result: List[TagModel]
     total: int
     page: int
     page_size: int
 
 
 class TagResponse(BaseModel):
-    result: TagPublic
+    result: TagModel
 
 
 class TagCreateRequest(BaseModel):

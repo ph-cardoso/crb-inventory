@@ -12,7 +12,7 @@ from ..models.tag import (
     TagResponse,
 )
 from ..models.utils import AppResource, ResourceDeletedMessage
-from ..services.utils import validate_uuid
+from ..services.uuid import generate_uuid_v7, validate_uuid
 
 
 def read_tags(
@@ -25,7 +25,7 @@ def read_tags(
 
     tags_query = (
         select(
-            Tag.public_id,
+            Tag.id,
             Tag.name,
             Tag.description,
             Tag.is_active,
@@ -58,7 +58,7 @@ def read_tag(
     if not validate_uuid(tag_id):
         raise InvalidId(value=tag_id)  # pragma: no cover
 
-    tag_query = select(Tag).where(Tag.public_id == tag_id)
+    tag_query = select(Tag).where(Tag.id == tag_id)
     tag = session.scalar(tag_query)
 
     if not tag:
@@ -80,6 +80,7 @@ def create_tag(
     validate_tag_name(body.name)
 
     tag = Tag(
+        id=generate_uuid_v7(),
         name=body.name,
         description=body.description,
     )
@@ -99,7 +100,7 @@ def update_tag(
     if not validate_uuid(tag_id):
         raise InvalidId(value=tag_id)  # pragma: no cover
 
-    tag_query = select(Tag).where(Tag.public_id == tag_id)
+    tag_query = select(Tag).where(Tag.id == tag_id)
     tag = session.scalar(tag_query)
 
     if not tag:
@@ -108,7 +109,7 @@ def update_tag(
     validate_tag_name(body.name)
 
     tag_query_by_name = select(Tag).where(
-        Tag.name == body.name and Tag.public_id != tag_id
+        Tag.name == body.name and Tag.id != tag_id
     )
     tag_by_name = session.scalar(tag_query_by_name)
 
@@ -132,7 +133,7 @@ def delete_tag(
     if not validate_uuid(tag_id):
         raise InvalidId(value=tag_id)  # pragma: no cover
 
-    tag_query = select(Tag).where(Tag.public_id == tag_id)
+    tag_query = select(Tag).where(Tag.id == tag_id)
     tag = session.scalar(tag_query)
 
     if not tag:
@@ -141,9 +142,7 @@ def delete_tag(
     session.delete(tag)
     session.commit()
 
-    return ResourceDeletedMessage(
-        public_id=tag.public_id, resource=AppResource.TAG
-    )
+    return ResourceDeletedMessage(id=tag.id, resource=AppResource.TAG)
 
 
 def validate_tag_name(name: str) -> None:

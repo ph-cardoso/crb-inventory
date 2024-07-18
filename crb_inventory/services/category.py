@@ -10,7 +10,7 @@ from ..models.category import (
 from ..models.exceptions.category import CategoryNameAlreadyExists
 from ..models.exceptions.resource import InvalidId, ResourceNotFound
 from ..models.utils import AppResource, ResourceDeletedMessage
-from ..services.utils import validate_uuid
+from ..services.uuid import generate_uuid_v7, validate_uuid
 
 
 def read_categories(
@@ -23,7 +23,7 @@ def read_categories(
 
     categories_query = (
         select(
-            Category.public_id,
+            Category.id,
             Category.name,
             Category.description,
             Category.is_active,
@@ -39,7 +39,7 @@ def read_categories(
     total_count_query = select(func.count(Category.id)).where(where_clause)
 
     total_count = session.scalar(total_count_query)
-    categories = session.execute(categories_query)
+    categories = session.execute(categories_query).all()
 
     return CategoryListResponse(
         result=categories,
@@ -56,7 +56,7 @@ def read_category(
     if not validate_uuid(category_id):
         raise InvalidId(value=category_id)  # pragma: no cover
 
-    category_query = select(Category).where(Category.public_id == category_id)
+    category_query = select(Category).where(Category.id == category_id)
     category = session.scalar(category_query)
 
     if not category:
@@ -78,6 +78,7 @@ def create_category(
         raise CategoryNameAlreadyExists()  # pragma: no cover
 
     category = Category(
+        id=generate_uuid_v7(),
         name=body.name,
         description=body.description,
     )
@@ -97,7 +98,7 @@ def update_category(
     if not validate_uuid(category_id):
         raise InvalidId(value=category_id)  # pragma: no cover
 
-    category_query = select(Category).where(Category.public_id == category_id)
+    category_query = select(Category).where(Category.id == category_id)
     category = session.scalar(category_query)
 
     if not category:
@@ -106,7 +107,7 @@ def update_category(
         )  # pragma: no cover
 
     category_query_by_name = select(Category).where(
-        Category.name == body.name and Category.public_id != category_id
+        Category.name == body.name and Category.id != category_id
     )
     category_by_name = session.scalar(category_query_by_name)
 
@@ -130,7 +131,7 @@ def delete_category(
     if not validate_uuid(category_id):
         raise InvalidId(value=category_id)  # pragma: no cover
 
-    category_query = select(Category).where(Category.public_id == category_id)
+    category_query = select(Category).where(Category.id == category_id)
     category = session.scalar(category_query)
 
     if not category:
@@ -142,5 +143,5 @@ def delete_category(
     session.commit()
 
     return ResourceDeletedMessage(
-        public_id=category.public_id, resource=AppResource.CATEGORY
+        id=category.id, resource=AppResource.CATEGORY
     )

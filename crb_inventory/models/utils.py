@@ -12,5 +12,5 @@ class AppResource(Enum):
 
 class ResourceDeletedMessage(BaseModel):
     message: Optional[str] = "Resource deleted successfully."
-    public_id: str
+    id: str
     resource: AppResource

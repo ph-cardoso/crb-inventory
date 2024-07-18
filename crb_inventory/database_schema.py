@@ -13,18 +13,9 @@ mapper_registry = registry()
 @mapper_registry.mapped_as_dataclass
 class Category:
     __tablename__ = "category"
-    id: Mapped[int] = mapped_column(
-        init=False,
-        primary_key=True,
-        autoincrement=True,
-        nullable=False,
-    )
-    public_id: Mapped[str] = mapped_column(
+    id: Mapped[str] = mapped_column(
         PG_UUID(as_uuid=False),
-        init=False,
-        unique=True,
-        index=True,
-        server_default=func.gen_random_uuid(),
+        primary_key=True,
         nullable=False,
     )
     name: Mapped[str] = mapped_column(TEXT, unique=True, index=True)
@@ -51,18 +42,9 @@ class Category:
 @mapper_registry.mapped_as_dataclass
 class Tag:
     __tablename__ = "tag"
-    id: Mapped[int] = mapped_column(
-        init=False,
-        primary_key=True,
-        autoincrement=True,
-        nullable=False,
-    )
-    public_id: Mapped[str] = mapped_column(
+    id: Mapped[str] = mapped_column(
         PG_UUID(as_uuid=False),
-        init=False,
-        unique=True,
-        index=True,
-        server_default=func.gen_random_uuid(),
+        primary_key=True,
         nullable=False,
     )
     name: Mapped[str] = mapped_column(TEXT, unique=True, index=True)
@@ -89,18 +71,9 @@ class Tag:
 @mapper_registry.mapped_as_dataclass
 class CustomField:
     __tablename__ = "custom_field"
-    id: Mapped[int] = mapped_column(
-        init=False,
-        primary_key=True,
-        autoincrement=True,
-        nullable=False,
-    )
-    public_id: Mapped[str] = mapped_column(
+    id: Mapped[str] = mapped_column(
         PG_UUID(as_uuid=False),
-        init=False,
-        unique=True,
-        index=True,
-        server_default=func.gen_random_uuid(),
+        primary_key=True,
         nullable=False,
     )
     name: Mapped[str] = mapped_column(TEXT, unique=True, index=True)

@@ -15,7 +15,7 @@ from ..models.exceptions.custom_field import (
 )
 from ..models.exceptions.resource import InvalidId, ResourceNotFound
 from ..models.utils import AppResource, ResourceDeletedMessage
-from ..services.utils import validate_uuid
+from ..services.uuid import generate_uuid_v7, validate_uuid
 
 
 def read_custom_fields(
@@ -28,7 +28,7 @@ def read_custom_fields(
 
     custom_fields_query = (
         select(
-            CustomField.public_id,
+            CustomField.id,
             CustomField.name,
             CustomField.description,
             CustomField.is_active,
@@ -62,7 +62,7 @@ def read_custom_field(
         raise InvalidId(value=custom_field_id)  # pragma: no cover
 
     custom_field_query = select(CustomField).where(
-        CustomField.public_id == custom_field_id
+        CustomField.id == custom_field_id
     )
     custom_field = session.scalar(custom_field_query)
 
@@ -89,6 +89,7 @@ def create_custom_field(
     validate_custom_field_name(body.name)
 
     custom_field = CustomField(
+        id=generate_uuid_v7(),
         name=body.name,
         description=body.description,
     )
@@ -109,7 +110,7 @@ def update_custom_field(
         raise InvalidId(value=custom_field_id)  # pragma: no cover
 
     custom_field_query = select(CustomField).where(
-        CustomField.public_id == custom_field_id
+        CustomField.id == custom_field_id
     )
     custom_field = session.scalar(custom_field_query)
 
@@ -121,8 +122,7 @@ def update_custom_field(
     validate_custom_field_name(body.name)
 
     custom_field_query_by_name = select(CustomField).where(
-        CustomField.name == body.name
-        and CustomField.public_id != custom_field_id
+        CustomField.name == body.name and CustomField.id != custom_field_id
     )
     custom_field_by_name = session.scalar(custom_field_query_by_name)
 
@@ -147,7 +147,7 @@ def delete_custom_field(
         raise InvalidId(value=custom_field_id)  # pragma: no cover
 
     custom_field_query = select(CustomField).where(
-        CustomField.public_id == custom_field_id
+        CustomField.id == custom_field_id
     )
     custom_field = session.scalar(custom_field_query)
 
@@ -160,7 +160,7 @@ def delete_custom_field(
     session.commit()
 
     return ResourceDeletedMessage(
-        public_id=custom_field.public_id, resource=AppResource.CUSTOM_FIELD
+        id=custom_field.id, resource=AppResource.CUSTOM_FIELD
     )
 
 
