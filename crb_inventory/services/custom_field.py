@@ -1,5 +1,3 @@
-import re
-
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -8,14 +6,12 @@ from ..models.custom_field import (
     CustomFieldCreateRequest,
     CustomFieldListResponse,
     CustomFieldResponse,
+    CustomFieldUpdateRequest,
 )
-from ..models.exceptions.custom_field import (
-    CustomFieldNameAlreadyExists,
-    InvalidCustomFieldName,
-)
-from ..models.exceptions.resource import InvalidId, ResourceNotFound
+from ..models.exceptions.custom_field import CustomFieldNameAlreadyExists
+from ..models.exceptions.resource import ResourceNotFound
 from ..models.utils import AppResource, ResourceDeletedMessage
-from ..services.uuid import generate_uuid_v7, validate_uuid
+from ..services.uuid import generate_uuid_v7
 
 
 def read_custom_fields(
@@ -58,9 +54,6 @@ def read_custom_field(
     custom_field_id: str,
     session: Session,
 ) -> CustomFieldResponse:
-    if not validate_uuid(custom_field_id):
-        raise InvalidId(value=custom_field_id)  # pragma: no cover
-
     custom_field_query = select(CustomField).where(
         CustomField.id == custom_field_id
     )
@@ -86,8 +79,6 @@ def create_custom_field(
     if custom_field_by_name:
         raise CustomFieldNameAlreadyExists()  # pragma: no cover
 
-    validate_custom_field_name(body.name)
-
     custom_field = CustomField(
         id=generate_uuid_v7(),
         name=body.name,
@@ -103,12 +94,9 @@ def create_custom_field(
 
 def update_custom_field(
     custom_field_id: str,
-    body: CustomFieldCreateRequest,
+    body: CustomFieldUpdateRequest,
     session: Session,
 ) -> CustomFieldResponse:
-    if not validate_uuid(custom_field_id):
-        raise InvalidId(value=custom_field_id)  # pragma: no cover
-
     custom_field_query = select(CustomField).where(
         CustomField.id == custom_field_id
     )
@@ -118,8 +106,6 @@ def update_custom_field(
         raise ResourceNotFound(
             resource=AppResource.CUSTOM_FIELD
         )  # pragma: no cover
-
-    validate_custom_field_name(body.name)
 
     custom_field_query_by_name = select(CustomField).where(
         CustomField.name == body.name and CustomField.id != custom_field_id
@@ -143,9 +129,6 @@ def delete_custom_field(
     custom_field_id: str,
     session: Session,
 ) -> ResourceDeletedMessage:
-    if not validate_uuid(custom_field_id):
-        raise InvalidId(value=custom_field_id)  # pragma: no cover
-
     custom_field_query = select(CustomField).where(
         CustomField.id == custom_field_id
     )
@@ -162,14 +145,3 @@ def delete_custom_field(
     return ResourceDeletedMessage(
         id=custom_field.id, resource=AppResource.CUSTOM_FIELD
     )
-
-
-def validate_custom_field_name(name: str) -> None:
-    max_custom_field_length = 30
-    regex = r"^[a-z0-9]+(_[a-z0-9]+)*$"
-
-    if len(name) > max_custom_field_length:
-        raise InvalidCustomFieldName(value=name)  # pragma: no cover
-
-    if not re.match(regex, name):
-        raise InvalidCustomFieldName(value=name)  # pragma: no cover

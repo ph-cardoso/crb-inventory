@@ -2,7 +2,6 @@ from http import HTTPStatus
 
 from crb_inventory.models.exceptions.category import CategoryNameAlreadyExists
 from crb_inventory.models.exceptions.resource import (
-    InvalidId,
     ResourceNotFound,
 )
 from crb_inventory.models.utils import AppResource
@@ -154,18 +153,18 @@ def test_category_not_found_exception_should_return_404(client):
     assert response.json()["url"] == f"{route}{random_id}"
 
 
-def test_invalid_id_exception_should_return_400(client):
+def test_invalid_id_exception_should_return_422(client):
     route = "/v1/category/"
-    invalid_id = "invalid-id"
-    response = client.get(f"{route}{invalid_id}")
+    invalid_input = "invalid-id"
+    response = client.get(f"{route}{invalid_input}")
 
-    exception = InvalidId(value=invalid_id)
-
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json()["exc"] == exception.__class__.__name__
-    assert response.json()["detail"] == exception.detail
-    assert response.headers["X-Error-Code"] == exception.error_code
-    assert response.json()["url"] == f"{route}{invalid_id}"
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.json()["detail"][0]["type"] == "value_error"
+    assert response.json()["detail"][0]["input"] == invalid_input
+    assert (
+        response.json()["detail"][0]["msg"]
+        == "Value error, value should be a valid UUID"
+    )
 
 
 def test_category_name_already_exists_exception_should_return_422(

@@ -1,7 +1,9 @@
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import AfterValidator
 from sqlalchemy.orm import Session
+from typing_extensions import Annotated
 
 from ...core.database import get_session
 from ...models.custom_field import (
@@ -11,6 +13,7 @@ from ...models.custom_field import (
     CustomFieldUpdateRequest,
 )
 from ...models.utils import ResourceDeletedMessage
+from ...models.validators import validate_uuid_value
 from ...services.custom_field import (
     create_custom_field,
     delete_custom_field,
@@ -45,7 +48,7 @@ async def read_custom_fields_endpoint(
     summary="Get custom_field by ID",
 )
 async def read_custom_field_endpoint(
-    custom_field_id: str,
+    custom_field_id: Annotated[str, AfterValidator(validate_uuid_value)],
     session: Session = Depends(get_session),
 ) -> CustomFieldResponse:
     return read_custom_field(custom_field_id=custom_field_id, session=session)
@@ -71,7 +74,7 @@ async def create_custom_field_endpoint(
     summary="Update a custom_field",
 )
 async def update_custom_field_endpoint(
-    custom_field_id: str,
+    custom_field_id: Annotated[str, AfterValidator(validate_uuid_value)],
     body: CustomFieldUpdateRequest,
     session: Session = Depends(get_session),
 ) -> CustomFieldResponse:
@@ -87,7 +90,7 @@ async def update_custom_field_endpoint(
     summary="Delete a custom_field",
 )
 async def delete_custom_field_endpoint(
-    custom_field_id: str,
+    custom_field_id: Annotated[str, AfterValidator(validate_uuid_value)],
     session: Session = Depends(get_session),
 ) -> ResourceDeletedMessage:
     return delete_custom_field(

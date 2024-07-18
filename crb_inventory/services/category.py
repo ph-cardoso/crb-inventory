@@ -6,11 +6,12 @@ from ..models.category import (
     CategoryCreateRequest,
     CategoryListResponse,
     CategoryResponse,
+    CategoryUpdateRequest,
 )
 from ..models.exceptions.category import CategoryNameAlreadyExists
-from ..models.exceptions.resource import InvalidId, ResourceNotFound
+from ..models.exceptions.resource import ResourceNotFound
 from ..models.utils import AppResource, ResourceDeletedMessage
-from ..services.uuid import generate_uuid_v7, validate_uuid
+from ..services.uuid import generate_uuid_v7
 
 
 def read_categories(
@@ -53,9 +54,6 @@ def read_category(
     category_id: str,
     session: Session,
 ) -> CategoryResponse:
-    if not validate_uuid(category_id):
-        raise InvalidId(value=category_id)  # pragma: no cover
-
     category_query = select(Category).where(Category.id == category_id)
     category = session.scalar(category_query)
 
@@ -92,12 +90,9 @@ def create_category(
 
 def update_category(
     category_id: str,
-    body: CategoryCreateRequest,
+    body: CategoryUpdateRequest,
     session: Session,
 ) -> CategoryResponse:
-    if not validate_uuid(category_id):
-        raise InvalidId(value=category_id)  # pragma: no cover
-
     category_query = select(Category).where(Category.id == category_id)
     category = session.scalar(category_query)
 
@@ -128,9 +123,6 @@ def delete_category(
     category_id: str,
     session: Session,
 ) -> ResourceDeletedMessage:
-    if not validate_uuid(category_id):
-        raise InvalidId(value=category_id)  # pragma: no cover
-
     category_query = select(Category).where(Category.id == category_id)
     category = session.scalar(category_query)
 

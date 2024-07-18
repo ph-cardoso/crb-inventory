@@ -8,6 +8,7 @@ class AppResource(Enum):
     CATEGORY = "category"
     TAG = "tag"
     CUSTOM_FIELD = "custom_field"
+    ITEM = "item"
 
 
 class ResourceDeletedMessage(BaseModel):

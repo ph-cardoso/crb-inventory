@@ -1,7 +1,9 @@
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import AfterValidator
 from sqlalchemy.orm import Session
+from typing_extensions import Annotated
 
 from ...core.database import get_session
 from ...models.category import (
@@ -11,6 +13,7 @@ from ...models.category import (
     CategoryUpdateRequest,
 )
 from ...models.utils import ResourceDeletedMessage
+from ...models.validators import validate_uuid_value
 from ...services.category import (
     create_category,
     delete_category,
@@ -45,7 +48,7 @@ async def read_categories_endpoint(
     summary="Get category by ID",
 )
 async def read_category_endpoint(
-    category_id: str,
+    category_id: Annotated[str, AfterValidator(validate_uuid_value)],
     session: Session = Depends(get_session),
 ) -> CategoryResponse:
     return read_category(category_id=category_id, session=session)
@@ -71,7 +74,7 @@ async def create_category_endpoint(
     summary="Update a category",
 )
 async def update_category_endpoint(
-    category_id: str,
+    category_id: Annotated[str, AfterValidator(validate_uuid_value)],
     body: CategoryUpdateRequest,
     session: Session = Depends(get_session),
 ) -> CategoryResponse:
@@ -85,7 +88,7 @@ async def update_category_endpoint(
     summary="Delete a category",
 )
 async def delete_category_endpoint(
-    category_id: str,
+    category_id: Annotated[str, AfterValidator(validate_uuid_value)],
     session: Session = Depends(get_session),
 ) -> ResourceDeletedMessage:
     return delete_category(category_id=category_id, session=session)

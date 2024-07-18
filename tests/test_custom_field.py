@@ -2,10 +2,8 @@ from http import HTTPStatus
 
 from crb_inventory.models.exceptions.custom_field import (
     CustomFieldNameAlreadyExists,
-    InvalidCustomFieldName,
 )
 from crb_inventory.models.exceptions.resource import (
-    InvalidId,
     ResourceNotFound,
 )
 from crb_inventory.models.utils import AppResource
@@ -164,18 +162,15 @@ def test_custom_field_not_found_exception_should_return_404(client):
     assert response.json()["url"] == f"{route}{random_id}"
 
 
-def test_invalid_id_exception_should_return_400(client):
+def test_invalid_id_exception_should_return_422(client):
     route = "/v1/custom_field/"
-    invalid_id = "invalid-id"
-    response = client.get(f"{route}{invalid_id}")
+    invalid_input = "invalid-id"
+    response = client.get(f"{route}{invalid_input}")
 
-    exception = InvalidId(value=invalid_id)
-
-    assert response.status_code == HTTPStatus.BAD_REQUEST
-    assert response.json()["exc"] == exception.__class__.__name__
-    assert response.json()["detail"] == exception.detail
-    assert response.headers["X-Error-Code"] == exception.error_code
-    assert response.json()["url"] == f"{route}{invalid_id}"
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert len(response.json()["detail"]) == 1
+    assert response.json()["detail"][0]["type"] == "value_error"
+    assert response.json()["detail"][0]["input"] == invalid_input
 
 
 def test_custom_field_name_already_exists_exception_should_return_422(
@@ -208,12 +203,9 @@ def test_custom_field_invalid_name_exception_should_return_422(client):
         "name": "Invalid_Name",
     }
 
-    exception = InvalidCustomFieldName(value=custom_field_data["name"])
-
     response = client.post(route, json=custom_field_data)
 
     assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
-    assert response.json()["exc"] == exception.__class__.__name__
-    assert response.json()["detail"] == exception.detail
-    assert response.headers["X-Error-Code"] == exception.error_code
-    assert response.json()["url"] == route
+    assert len(response.json()["detail"]) == 1
+    assert response.json()["detail"][0]["type"] == "value_error"
+    assert response.json()["detail"][0]["input"] == custom_field_data["name"]

@@ -1,18 +1,17 @@
-import re
-
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from ..database_schema import Tag
-from ..models.exceptions.resource import InvalidId, ResourceNotFound
-from ..models.exceptions.tag import InvalidTagName, TagNameAlreadyExists
+from ..models.exceptions.resource import ResourceNotFound
+from ..models.exceptions.tag import TagNameAlreadyExists
 from ..models.tag import (
     TagCreateRequest,
     TagListResponse,
     TagResponse,
+    TagUpdateRequest,
 )
 from ..models.utils import AppResource, ResourceDeletedMessage
-from ..services.uuid import generate_uuid_v7, validate_uuid
+from ..services.uuid import generate_uuid_v7
 
 
 def read_tags(
@@ -55,9 +54,6 @@ def read_tag(
     tag_id: str,
     session: Session,
 ) -> TagResponse:
-    if not validate_uuid(tag_id):
-        raise InvalidId(value=tag_id)  # pragma: no cover
-
     tag_query = select(Tag).where(Tag.id == tag_id)
     tag = session.scalar(tag_query)
 
@@ -77,8 +73,6 @@ def create_tag(
     if tag_by_name:
         raise TagNameAlreadyExists()  # pragma: no cover
 
-    validate_tag_name(body.name)
-
     tag = Tag(
         id=generate_uuid_v7(),
         name=body.name,
@@ -94,19 +88,14 @@ def create_tag(
 
 def update_tag(
     tag_id: str,
-    body: TagCreateRequest,
+    body: TagUpdateRequest,
     session: Session,
 ) -> TagResponse:
-    if not validate_uuid(tag_id):
-        raise InvalidId(value=tag_id)  # pragma: no cover
-
     tag_query = select(Tag).where(Tag.id == tag_id)
     tag = session.scalar(tag_query)
 
     if not tag:
         raise ResourceNotFound(resource=AppResource.TAG)  # pragma: no cover
-
-    validate_tag_name(body.name)
 
     tag_query_by_name = select(Tag).where(
         Tag.name == body.name and Tag.id != tag_id
@@ -130,9 +119,6 @@ def delete_tag(
     tag_id: str,
     session: Session,
 ) -> ResourceDeletedMessage:
-    if not validate_uuid(tag_id):
-        raise InvalidId(value=tag_id)  # pragma: no cover
-
     tag_query = select(Tag).where(Tag.id == tag_id)
     tag = session.scalar(tag_query)
 
@@ -143,14 +129,3 @@ def delete_tag(
     session.commit()
 
     return ResourceDeletedMessage(id=tag.id, resource=AppResource.TAG)
-
-
-def validate_tag_name(name: str) -> None:
-    max_tag_length = 50
-    regex = r"^[a-z0-9]+(-[a-z0-9]+)*$"
-
-    if len(name) > max_tag_length:
-        raise InvalidTagName(value=name)  # pragma: no cover
-
-    if not re.match(regex, name):
-        raise InvalidTagName(value=name)  # pragma: no cover
