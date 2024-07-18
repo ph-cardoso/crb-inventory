@@ -1,7 +1,9 @@
 from http import HTTPStatus
 
 from fastapi import APIRouter, Depends, Query
+from pydantic import AfterValidator
 from sqlalchemy.orm import Session
+from typing_extensions import Annotated
 
 from ...core.database import get_session
 from ...models.tag import (
@@ -11,6 +13,7 @@ from ...models.tag import (
     TagUpdateRequest,
 )
 from ...models.utils import ResourceDeletedMessage
+from ...models.validators import validate_uuid_value
 from ...services.tag import (
     create_tag,
     delete_tag,
@@ -45,7 +48,7 @@ async def read_tags_endpoint(
     summary="Get tag by ID",
 )
 async def read_tag_endpoint(
-    tag_id: str,
+    tag_id: Annotated[str, AfterValidator(validate_uuid_value)],
     session: Session = Depends(get_session),
 ) -> TagResponse:
     return read_tag(tag_id=tag_id, session=session)
@@ -71,7 +74,7 @@ async def create_tag_endpoint(
     summary="Update a tag",
 )
 async def update_tag_endpoint(
-    tag_id: str,
+    tag_id: Annotated[str, AfterValidator(validate_uuid_value)],
     body: TagUpdateRequest,
     session: Session = Depends(get_session),
 ) -> TagResponse:
@@ -85,7 +88,7 @@ async def update_tag_endpoint(
     summary="Delete a tag",
 )
 async def delete_tag_endpoint(
-    tag_id: str,
+    tag_id: Annotated[str, AfterValidator(validate_uuid_value)],
     session: Session = Depends(get_session),
 ) -> ResourceDeletedMessage:
     return delete_tag(tag_id=tag_id, session=session)

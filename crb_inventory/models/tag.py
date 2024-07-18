@@ -1,7 +1,9 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
+
+from ..models.validators import validate_tag_name_value
 
 
 class TagModel(BaseModel):
@@ -29,8 +31,16 @@ class TagCreateRequest(BaseModel):
     name: str
     description: Optional[str] = None
 
+    _validate_tag_name_value = field_validator("name", mode="after")(
+        validate_tag_name_value
+    )
+
 
 class TagUpdateRequest(BaseModel):
     name: str
     description: Optional[str] = None
     is_active: bool
+
+    _validate_tag_name_value = field_validator("name", mode="after")(
+        validate_tag_name_value
+    )
