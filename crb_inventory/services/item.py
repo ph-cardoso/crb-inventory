@@ -243,3 +243,87 @@ def check_tag_is_associated_with_item(item: Item, tag: Tag):
 def check_tag_not_associated_with_item(item: Item, tag: Tag):
     if tag in item.tags:
         raise TagAlreadyAssociatedWithItem(tag_id=tag.id, item_id=item.id)
+
+
+def read_items_by_category(
+    category_id: str,
+    page: int,
+    page_size: int,
+    session: Session,
+) -> ItemListResponse:
+    category = check_category_exists(category_id, session)
+
+    offset = (page - 1) * page_size
+    where_clause = Item.is_active.is_(True) & (Item.category_id == category.id)
+
+    items_query = (
+        select(
+            Item.id,
+            Item.name,
+            Item.description,
+            Item.is_active,
+            Item.category_id,
+            Item.minimum_threshold,
+            Item.stock_quantity,
+            Item.created_at,
+            Item.updated_at,
+        )
+        .where(where_clause)
+        .offset(offset)
+        .limit(page_size)
+        .order_by(Item.id.desc())
+    )
+
+    total_count_query = select(func.count(Item.id)).where(where_clause)
+    total_count = session.scalar(total_count_query)
+
+    items = session.execute(items_query).all()
+
+    return ItemListResponse(
+        result=items,
+        total=total_count,
+        page=page,
+        page_size=page_size,
+    )
+
+
+def read_items_by_tag(
+    tag_id: str,
+    page: int,
+    page_size: int,
+    session: Session,
+) -> ItemListResponse:
+    tag = check_tag_exists(tag_id, session)
+
+    offset = (page - 1) * page_size
+    where_clause = Item.is_active.is_(True) & (Item.tags.any(Tag.id == tag.id))
+
+    items_query = (
+        select(
+            Item.id,
+            Item.name,
+            Item.description,
+            Item.is_active,
+            Item.category_id,
+            Item.minimum_threshold,
+            Item.stock_quantity,
+            Item.created_at,
+            Item.updated_at,
+        )
+        .where(where_clause)
+        .offset(offset)
+        .limit(page_size)
+        .order_by(Item.id.desc())
+    )
+
+    total_count_query = select(func.count(Item.id)).where(where_clause)
+    total_count = session.scalar(total_count_query)
+
+    items = session.execute(items_query).all()
+
+    return ItemListResponse(
+        result=items,
+        total=total_count,
+        page=page,
+        page_size=page_size,
+    )

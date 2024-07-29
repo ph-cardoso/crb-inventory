@@ -471,3 +471,92 @@ def test_add_tag_already_associated_with_item_should_return_422(session, client)
     assert response.json()["detail"] == exception.detail
     assert response.headers["X-Error-Code"] == exception.error_code
     assert response.json()["url"] == f"{route}{item.id}/tag/{tag.id}"
+
+
+def test_read_items_by_category_should_return_200_and_items(session, client):
+    route = "/v1/item/"
+    total = 20
+    page = 1
+    page_size = 10
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    category_2 = CategoryFactory()
+    session.add(category_2)
+    session.commit()
+
+    items = ItemFactory.create_batch(total, category_id=category.id)
+    session.bulk_save_objects(items)
+    session.commit()
+
+    items_2 = ItemFactory.create_batch(5, category_id=category_2.id)
+    session.bulk_save_objects(items_2)
+    session.commit()
+
+    response = client.get(
+        f"{route}category/{category.id}?page={page}&page_size={page_size}"
+    )
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()["total"] == total
+    assert response.json()["page"] == page
+    assert response.json()["page_size"] == page_size
+    assert response.json()["result"][0]["category_id"] == category.id
+    assert "id" in response.json()["result"][0]
+    assert "name" in response.json()["result"][0]
+    assert "description" in response.json()["result"][0]
+    assert "is_active" in response.json()["result"][0]
+    assert "minimum_threshold" in response.json()["result"][0]
+    assert "stock_quantity" in response.json()["result"][0]
+    assert "created_at" in response.json()["result"][0]
+    assert "updated_at" in response.json()["result"][0]
+
+
+def test_read_items_by_tag_should_return_200_and_items(session, client):
+    route = "/v1/item/"
+    total = 2
+    page = 1
+    page_size = 10
+
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    tag = TagFactory()
+    session.add(tag)
+    session.commit()
+
+    items = ItemFactory.create_batch(10, category_id=category.id)
+    session.bulk_save_objects(items)
+    session.commit()
+
+    item_01 = ItemFactory(category_id=category.id)
+    session.add(item_01)
+    session.commit()
+
+    item_02 = ItemFactory(category_id=category.id)
+    session.add(item_02)
+    session.commit()
+
+    item_01.tags.append(tag)
+    session.commit()
+
+    item_02.tags.append(tag)
+    session.commit()
+
+    response = client.get(f"{route}tag/{tag.id}?page={page}&page_size={page_size}")
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()["total"] == total
+    assert response.json()["page"] == page
+    assert response.json()["page_size"] == page_size
+    assert response.json()["result"][0]["category_id"] == category.id
+    assert "id" in response.json()["result"][0]
+    assert "name" in response.json()["result"][0]
+    assert "description" in response.json()["result"][0]
+    assert "is_active" in response.json()["result"][0]
+    assert "minimum_threshold" in response.json()["result"][0]
+    assert "stock_quantity" in response.json()["result"][0]
+    assert "created_at" in response.json()["result"][0]
+    assert "updated_at" in response.json()["result"][0]

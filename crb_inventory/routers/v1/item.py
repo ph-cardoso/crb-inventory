@@ -27,6 +27,8 @@ from ...services.item import (
     read_item,
     read_item_tags,
     read_items,
+    read_items_by_category,
+    read_items_by_tag,
     update_item,
 )
 
@@ -157,3 +159,37 @@ async def delete_tag_from_item_endpoint(
     session: Session = Depends(get_session),
 ) -> ItemTagDeleteMessage:
     return delete_tag_from_item(item_id=item_id, tag_id=tag_id, session=session)
+
+
+@router.get(
+    "/category/{category_id}",
+    status_code=HTTPStatus.OK,
+    response_model=ItemListResponse,
+    summary="Get item list by category",
+)
+async def read_items_by_category_endpoint(
+    category_id: Annotated[str, AfterValidator(validate_uuid_value)],
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(10, ge=1, le=100, description="Number of items per page"),
+    session: Session = Depends(get_session),
+) -> ItemListResponse:
+    return read_items_by_category(
+        page=page, page_size=page_size, category_id=category_id, session=session
+    )
+
+
+@router.get(
+    "/tag/{tag_id}",
+    status_code=HTTPStatus.OK,
+    response_model=ItemListResponse,
+    summary="Get item list by tag",
+)
+async def read_items_by_tag_endpoint(
+    tag_id: Annotated[str, AfterValidator(validate_uuid_value)],
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(10, ge=1, le=100, description="Number of items per page"),
+    session: Session = Depends(get_session),
+) -> ItemListResponse:
+    return read_items_by_tag(
+        page=page, page_size=page_size, tag_id=tag_id, session=session
+    )
