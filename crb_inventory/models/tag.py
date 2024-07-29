@@ -44,3 +44,13 @@ class TagUpdateRequest(BaseModel):
     _validate_tag_name_value = field_validator("name", mode="after")(
         validate_tag_name_value
     )
+
+
+class TagPatchRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+
+    _validate_tag_name_value = field_validator("name", mode="after")(
+        validate_tag_name_value
+    )

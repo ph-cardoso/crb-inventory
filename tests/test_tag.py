@@ -1,5 +1,7 @@
 from http import HTTPStatus
 
+import pytest
+
 from crb_inventory.models.exceptions.resource import (
     ResourceNotFound,
 )
@@ -7,6 +9,7 @@ from crb_inventory.models.exceptions.tag import (
     TagNameAlreadyExists,
 )
 from crb_inventory.models.utils import AppResource
+from crb_inventory.services.tag import check_tag_exists, check_tag_name_exists
 from tests.factories import TagFactory
 
 
@@ -188,3 +191,54 @@ def test_tag_invalid_name_exception_should_return_422(client):
     assert len(response.json()["detail"]) == 1
     assert response.json()["detail"][0]["type"] == "value_error"
     assert response.json()["detail"][0]["input"] == tag_data["name"]
+
+
+def test_patch_tag_should_return_200_and_updated_tag(session, client):
+    route = "/v1/tag/"
+    tag = TagFactory()
+    session.add(tag)
+    session.commit()
+
+    tag_patch_data = {
+        "name": "tag-updated",
+        "description": "Tag 1 description updated",
+        "is_active": False,
+    }
+
+    response = client.patch(f"{route}{tag.id}", json=tag_patch_data)
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()["result"]["name"] == tag_patch_data["name"]
+    assert response.json()["result"]["description"] == tag_patch_data["description"]
+    assert response.json()["result"]["is_active"] == tag_patch_data["is_active"]
+    assert response.json()["result"]["id"] == tag.id
+    assert "created_at" in response.json()["result"]
+    assert "updated_at" in response.json()["result"]
+
+
+def test_check_tag_name_exists(session):
+    tag = TagFactory()
+    session.add(tag)
+    session.commit()
+
+    tag_data = {"name": tag.name}
+
+    check_tag_name_exists(tag_data["name"], session, tag.id)
+
+    with pytest.raises(TagNameAlreadyExists):
+        check_tag_name_exists(tag_data["name"], session)
+
+
+def test_check_tag_exists(session):
+    random_id = "56f0572c-1dec-4b4d-b517-4cac967146a7"
+
+    tag = TagFactory()
+    session.add(tag)
+    session.commit()
+
+    tag_checked = check_tag_exists(tag.id, session)
+    assert tag_checked.id == tag.id
+    assert tag_checked.name == tag.name
+
+    with pytest.raises(ResourceNotFound):
+        check_tag_exists(random_id, session)

@@ -9,6 +9,7 @@ from ...core.database import get_session
 from ...models.tag import (
     TagCreateRequest,
     TagListResponse,
+    TagPatchRequest,
     TagResponse,
     TagUpdateRequest,
 )
@@ -17,6 +18,7 @@ from ...models.validators import validate_uuid_value
 from ...services.tag import (
     create_tag,
     delete_tag,
+    patch_tag,
     read_tag,
     read_tags,
     update_tag,
@@ -33,9 +35,7 @@ router = APIRouter(prefix="/tag", tags=["tag"])
 )
 async def read_tags_endpoint(
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(
-        10, ge=1, le=100, description="Number of items per page"
-    ),
+    page_size: int = Query(10, ge=1, le=100, description="Number of items per page"),
     session: Session = Depends(get_session),
 ) -> TagListResponse:
     return read_tags(page=page, page_size=page_size, session=session)
@@ -92,3 +92,17 @@ async def delete_tag_endpoint(
     session: Session = Depends(get_session),
 ) -> ResourceDeletedMessage:
     return delete_tag(tag_id=tag_id, session=session)
+
+
+@router.patch(
+    "/{tag_id}",
+    status_code=HTTPStatus.OK,
+    response_model=TagResponse,
+    summary="Patch one or more parameters of a tag",
+)
+async def patch_tag_endpoint(
+    tag_id: Annotated[str, AfterValidator(validate_uuid_value)],
+    body: TagPatchRequest,
+    session: Session = Depends(get_session),
+) -> TagResponse:
+    return patch_tag(tag_id=tag_id, body=body, session=session)

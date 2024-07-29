@@ -7,6 +7,7 @@ from ..models.exceptions.tag import TagNameAlreadyExists
 from ..models.tag import (
     TagCreateRequest,
     TagListResponse,
+    TagPatchRequest,
     TagResponse,
     TagUpdateRequest,
 )
@@ -54,11 +55,7 @@ def read_tag(
     tag_id: str,
     session: Session,
 ) -> TagResponse:
-    tag_query = select(Tag).where(Tag.id == tag_id)
-    tag = session.scalar(tag_query)
-
-    if not tag:
-        raise ResourceNotFound(resource=AppResource.TAG)  # pragma: no cover
+    tag = check_tag_exists(tag_id, session)
 
     return TagResponse(result=tag)
 
@@ -67,11 +64,7 @@ def create_tag(
     body: TagCreateRequest,
     session: Session,
 ) -> TagResponse:
-    tag_query_by_name = select(Tag).where(Tag.name == body.name)
-    tag_by_name = session.scalar(tag_query_by_name)
-
-    if tag_by_name:
-        raise TagNameAlreadyExists()  # pragma: no cover
+    check_tag_name_exists(body.name, session)
 
     tag = Tag(
         id=generate_uuid_v7(),
@@ -91,19 +84,9 @@ def update_tag(
     body: TagUpdateRequest,
     session: Session,
 ) -> TagResponse:
-    tag_query = select(Tag).where(Tag.id == tag_id)
-    tag = session.scalar(tag_query)
+    tag = check_tag_exists(tag_id, session)
 
-    if not tag:
-        raise ResourceNotFound(resource=AppResource.TAG)  # pragma: no cover
-
-    tag_query_by_name = select(Tag).where(
-        Tag.name == body.name and Tag.id != tag_id
-    )
-    tag_by_name = session.scalar(tag_query_by_name)
-
-    if tag_by_name:
-        raise TagNameAlreadyExists()  # pragma: no cover
+    check_tag_name_exists(body.name, session, previous_tag_id=tag_id)
 
     tag.name = body.name
     tag.description = body.description
@@ -119,13 +102,60 @@ def delete_tag(
     tag_id: str,
     session: Session,
 ) -> ResourceDeletedMessage:
-    tag_query = select(Tag).where(Tag.id == tag_id)
-    tag = session.scalar(tag_query)
-
-    if not tag:
-        raise ResourceNotFound(resource=AppResource.TAG)  # pragma: no cover
+    tag = check_tag_exists(tag_id, session)
 
     session.delete(tag)
     session.commit()
 
     return ResourceDeletedMessage(id=tag.id, resource=AppResource.TAG)
+
+
+def patch_tag(
+    tag_id: str,
+    body: TagPatchRequest,
+    session: Session,
+) -> TagResponse:
+    tag = check_tag_exists(tag_id, session)
+
+    if body.name is not None:
+        check_tag_name_exists(body.name, session, previous_tag_id=tag_id)
+        tag.name = body.name
+
+    if body.description is not None:
+        tag.description = body.description
+
+    if body.is_active is not None:
+        tag.is_active = body.is_active
+
+    session.commit()
+    session.refresh(tag)
+
+    return TagResponse(result=tag)
+
+
+def check_tag_name_exists(
+    name: str,
+    session: Session,
+    previous_tag_id: str = None,
+):
+    tag_query = select(Tag).where(Tag.name == name)
+    tag = session.scalar(tag_query)
+
+    if tag:
+        if previous_tag_id and tag.id == previous_tag_id:
+            return
+
+        raise TagNameAlreadyExists()
+
+
+def check_tag_exists(
+    tag_id: str,
+    session: Session,
+) -> Tag:
+    tag_query = select(Tag).where(Tag.id == tag_id)
+    tag = session.scalar(tag_query)
+
+    if not tag:
+        raise ResourceNotFound(resource=AppResource.TAG)
+
+    return tag

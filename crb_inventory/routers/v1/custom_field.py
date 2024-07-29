@@ -9,6 +9,7 @@ from ...core.database import get_session
 from ...models.custom_field import (
     CustomFieldCreateRequest,
     CustomFieldListResponse,
+    CustomFieldPatchRequest,
     CustomFieldResponse,
     CustomFieldUpdateRequest,
 )
@@ -17,6 +18,7 @@ from ...models.validators import validate_uuid_value
 from ...services.custom_field import (
     create_custom_field,
     delete_custom_field,
+    patch_custom_field,
     read_custom_field,
     read_custom_fields,
     update_custom_field,
@@ -33,9 +35,7 @@ router = APIRouter(prefix="/custom_field", tags=["custom_field"])
 )
 async def read_custom_fields_endpoint(
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(
-        10, ge=1, le=100, description="Number of items per page"
-    ),
+    page_size: int = Query(10, ge=1, le=100, description="Number of items per page"),
     session: Session = Depends(get_session),
 ) -> CustomFieldListResponse:
     return read_custom_fields(page=page, page_size=page_size, session=session)
@@ -93,6 +93,20 @@ async def delete_custom_field_endpoint(
     custom_field_id: Annotated[str, AfterValidator(validate_uuid_value)],
     session: Session = Depends(get_session),
 ) -> ResourceDeletedMessage:
-    return delete_custom_field(
-        custom_field_id=custom_field_id, session=session
+    return delete_custom_field(custom_field_id=custom_field_id, session=session)
+
+
+@router.patch(
+    "/{custom_field_id}",
+    status_code=HTTPStatus.OK,
+    response_model=CustomFieldResponse,
+    summary="Patch one or more parameters of a custom_field",
+)
+async def patch_custom_field_endpoint(
+    custom_field_id: Annotated[str, AfterValidator(validate_uuid_value)],
+    body: CustomFieldPatchRequest,
+    session: Session = Depends(get_session),
+) -> CustomFieldResponse:
+    return patch_custom_field(
+        custom_field_id=custom_field_id, body=body, session=session
     )

@@ -1,5 +1,7 @@
 from http import HTTPStatus
 
+import pytest
+
 from crb_inventory.models.exceptions.custom_field import (
     CustomFieldNameAlreadyExists,
 )
@@ -7,6 +9,10 @@ from crb_inventory.models.exceptions.resource import (
     ResourceNotFound,
 )
 from crb_inventory.models.utils import AppResource
+from crb_inventory.services.custom_field import (
+    check_custom_field_exists,
+    check_custom_field_name_exists,
+)
 from tests.factories import CustomFieldFactory
 
 
@@ -16,9 +22,7 @@ def test_read_custom_fields_should_return_6(session, client):
     expected_default_page = 1
     expected_default_page_size = 10
 
-    session.bulk_save_objects(
-        CustomFieldFactory.create_batch(expected_custom_fields)
-    )
+    session.bulk_save_objects(CustomFieldFactory.create_batch(expected_custom_fields))
     session.commit()
 
     response = client.get(route)
@@ -39,9 +43,7 @@ def test_read_custom_fields_should_return_5_in_page_2(session, client):
     expected_page = 2
     expected_page_size = 20
 
-    session.bulk_save_objects(
-        CustomFieldFactory.create_batch(expected_custom_fields)
-    )
+    session.bulk_save_objects(CustomFieldFactory.create_batch(expected_custom_fields))
     session.commit()
 
     response = client.get(
@@ -68,19 +70,14 @@ def test_create_custom_field_should_return_201_and_generated_data(client):
 
     assert response.status_code == HTTPStatus.CREATED
     assert response.json()["result"]["name"] == custom_field_data["name"]
-    assert (
-        response.json()["result"]["description"]
-        == custom_field_data["description"]
-    )
+    assert response.json()["result"]["description"] == custom_field_data["description"]
     assert response.json()["result"]["is_active"] is True
     assert "id" in response.json()["result"]
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
 
 
-def test_read_custom_field_should_return_200_and_generated_data(
-    session, client
-):
+def test_read_custom_field_should_return_200_and_generated_data(session, client):
     route = "/v1/custom_field/"
     custom_field = CustomFieldFactory()
     session.add(custom_field)
@@ -97,9 +94,7 @@ def test_read_custom_field_should_return_200_and_generated_data(
     assert "updated_at" in response.json()["result"]
 
 
-def test_update_custom_field_should_return_200_and_updated_data(
-    session, client
-):
+def test_update_custom_field_should_return_200_and_updated_data(session, client):
     route = "/v1/custom_field/"
     custom_field = CustomFieldFactory()
     session.add(custom_field)
@@ -115,14 +110,8 @@ def test_update_custom_field_should_return_200_and_updated_data(
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["result"]["name"] == custom_field_data["name"]
-    assert (
-        response.json()["result"]["description"]
-        == custom_field_data["description"]
-    )
-    assert (
-        response.json()["result"]["is_active"]
-        == custom_field_data["is_active"]
-    )
+    assert response.json()["result"]["description"] == custom_field_data["description"]
+    assert response.json()["result"]["is_active"] == custom_field_data["is_active"]
     assert response.json()["result"]["id"] == custom_field.id
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
@@ -132,9 +121,7 @@ def test_update_custom_field_should_return_200_and_updated_data(
     )
 
 
-def test_delete_custom_field_should_return_200_and_deleted_message(
-    session, client
-):
+def test_delete_custom_field_should_return_200_and_deleted_message(session, client):
     route = "/v1/custom_field/"
     custom_field = CustomFieldFactory()
     session.add(custom_field)
@@ -173,9 +160,7 @@ def test_invalid_id_exception_should_return_422(client):
     assert response.json()["detail"][0]["input"] == invalid_input
 
 
-def test_custom_field_name_already_exists_exception_should_return_422(
-    session, client
-):
+def test_custom_field_name_already_exists_exception_should_return_422(session, client):
     route = "/v1/custom_field/"
     custom_field = CustomFieldFactory()
     session.add(custom_field)
@@ -209,3 +194,59 @@ def test_custom_field_invalid_name_exception_should_return_422(client):
     assert len(response.json()["detail"]) == 1
     assert response.json()["detail"][0]["type"] == "value_error"
     assert response.json()["detail"][0]["input"] == custom_field_data["name"]
+
+
+def test_patch_custom_field_should_return_200_and_updated_custom_field(session, client):
+    route = "/v1/custom_field/"
+    custom_field = CustomFieldFactory()
+    session.add(custom_field)
+    session.commit()
+
+    custom_field_patch_data = {
+        "name": "custom_field_updated",
+        "description": "CustomField 1 description updated",
+        "is_active": False,
+    }
+
+    response = client.patch(f"{route}{custom_field.id}", json=custom_field_patch_data)
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()["result"]["name"] == custom_field_patch_data["name"]
+    assert (
+        response.json()["result"]["description"]
+        == custom_field_patch_data["description"]
+    )
+    assert (
+        response.json()["result"]["is_active"] == custom_field_patch_data["is_active"]
+    )
+    assert response.json()["result"]["id"] == custom_field.id
+    assert "created_at" in response.json()["result"]
+    assert "updated_at" in response.json()["result"]
+
+
+def test_check_custom_field_name_exists(session):
+    custom_field = CustomFieldFactory()
+    session.add(custom_field)
+    session.commit()
+
+    custom_field_data = {"name": custom_field.name}
+
+    check_custom_field_name_exists(custom_field_data["name"], session, custom_field.id)
+
+    with pytest.raises(CustomFieldNameAlreadyExists):
+        check_custom_field_name_exists(custom_field_data["name"], session)
+
+
+def test_check_custom_field_exists(session):
+    random_id = "56f0572c-1dec-4b4d-b517-4cac967146a7"
+
+    custom_field = CustomFieldFactory()
+    session.add(custom_field)
+    session.commit()
+
+    custom_field_checked = check_custom_field_exists(custom_field.id, session)
+    assert custom_field_checked.id == custom_field.id
+    assert custom_field_checked.name == custom_field.name
+
+    with pytest.raises(ResourceNotFound):
+        check_custom_field_exists(random_id, session)

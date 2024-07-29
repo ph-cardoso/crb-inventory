@@ -61,3 +61,20 @@ class ItemUpdateRequest(BaseModel):
     _validate_uuid_value = field_validator("category_id", mode="after")(
         validate_uuid_value
     )
+
+
+class ItemPatchRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None
+    category_id: Optional[str] = None
+    minimum_threshold: Optional[int] = None
+    stock_quantity: Optional[int] = None
+
+    _validate_positive_value = field_validator(
+        "minimum_threshold", "stock_quantity", mode="after"
+    )(validate_positive_value)
+
+    _validate_uuid_value = field_validator("category_id", mode="after")(
+        validate_uuid_value
+    )

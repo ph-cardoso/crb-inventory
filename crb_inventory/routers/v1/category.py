@@ -9,6 +9,7 @@ from ...core.database import get_session
 from ...models.category import (
     CategoryCreateRequest,
     CategoryListResponse,
+    CategoryPatchRequest,
     CategoryResponse,
     CategoryUpdateRequest,
 )
@@ -17,6 +18,7 @@ from ...models.validators import validate_uuid_value
 from ...services.category import (
     create_category,
     delete_category,
+    patch_category,
     read_categories,
     read_category,
     update_category,
@@ -33,9 +35,7 @@ router = APIRouter(prefix="/category", tags=["category"])
 )
 async def read_categories_endpoint(
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(
-        10, ge=1, le=100, description="Number of items per page"
-    ),
+    page_size: int = Query(10, ge=1, le=100, description="Number of items per page"),
     session: Session = Depends(get_session),
 ) -> CategoryListResponse:
     return read_categories(page=page, page_size=page_size, session=session)
@@ -92,3 +92,21 @@ async def delete_category_endpoint(
     session: Session = Depends(get_session),
 ) -> ResourceDeletedMessage:
     return delete_category(category_id=category_id, session=session)
+
+
+@router.patch(
+    "/{category_id}",
+    status_code=HTTPStatus.OK,
+    response_model=CategoryResponse,
+    summary="Patch one or more parameters of a category",
+)
+async def patch_category_endpoint(
+    category_id: Annotated[str, AfterValidator(validate_uuid_value)],
+    body: CategoryPatchRequest,
+    session: Session = Depends(get_session),
+) -> CategoryResponse:
+    return patch_category(
+        category_id=category_id,
+        body=body,
+        session=session,
+    )

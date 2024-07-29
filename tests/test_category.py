@@ -1,10 +1,16 @@
 from http import HTTPStatus
 
+import pytest
+
 from crb_inventory.models.exceptions.category import CategoryNameAlreadyExists
 from crb_inventory.models.exceptions.resource import (
     ResourceNotFound,
 )
 from crb_inventory.models.utils import AppResource
+from crb_inventory.services.category import (
+    check_category_exists,
+    check_category_name_exists,
+)
 from tests.factories import CategoryFactory
 
 
@@ -14,9 +20,7 @@ def test_read_categories_should_return_6(session, client):
     expected_default_page = 1
     expected_default_page_size = 10
 
-    session.bulk_save_objects(
-        CategoryFactory.create_batch(expected_categories)
-    )
+    session.bulk_save_objects(CategoryFactory.create_batch(expected_categories))
     session.commit()
 
     response = client.get(route)
@@ -37,9 +41,7 @@ def test_read_categories_should_return_5_in_page_2(session, client):
     expected_page = 2
     expected_page_size = 20
 
-    session.bulk_save_objects(
-        CategoryFactory.create_batch(expected_categories)
-    )
+    session.bulk_save_objects(CategoryFactory.create_batch(expected_categories))
     session.commit()
 
     response = client.get(
@@ -66,10 +68,7 @@ def test_create_category_should_return_201_and_generated_data(client):
 
     assert response.status_code == HTTPStatus.CREATED
     assert response.json()["result"]["name"] == category_data["name"]
-    assert (
-        response.json()["result"]["description"]
-        == category_data["description"]
-    )
+    assert response.json()["result"]["description"] == category_data["description"]
     assert response.json()["result"]["is_active"] is True
     assert "id" in response.json()["result"]
     assert "created_at" in response.json()["result"]
@@ -109,10 +108,7 @@ def test_update_category_should_return_200_and_updated_data(session, client):
 
     assert response.status_code == HTTPStatus.OK
     assert response.json()["result"]["name"] == category_data["name"]
-    assert (
-        response.json()["result"]["description"]
-        == category_data["description"]
-    )
+    assert response.json()["result"]["description"] == category_data["description"]
     assert response.json()["result"]["is_active"] == category_data["is_active"]
     assert response.json()["result"]["id"] == category.id
     assert "created_at" in response.json()["result"]
@@ -123,9 +119,7 @@ def test_update_category_should_return_200_and_updated_data(session, client):
     )
 
 
-def test_delete_category_should_return_200_and_deleted_message(
-    session, client
-):
+def test_delete_category_should_return_200_and_deleted_message(session, client):
     route = "/v1/category/"
     category = CategoryFactory()
     session.add(category)
@@ -167,9 +161,7 @@ def test_invalid_id_exception_should_return_422(client):
     )
 
 
-def test_category_name_already_exists_exception_should_return_422(
-    session, client
-):
+def test_category_name_already_exists_exception_should_return_422(session, client):
     route = "/v1/category/"
     category = CategoryFactory()
     session.add(category)
@@ -188,3 +180,56 @@ def test_category_name_already_exists_exception_should_return_422(
     assert response.json()["detail"] == exception.detail
     assert response.headers["X-Error-Code"] == exception.error_code
     assert response.json()["url"] == route
+
+
+def test_patch_category_should_return_200_and_updated_category(session, client):
+    route = "/v1/category/"
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    category_patch_data = {
+        "name": "Category 1 updated",
+        "description": "Category 1 description updated",
+        "is_active": False,
+    }
+
+    response = client.patch(f"{route}{category.id}", json=category_patch_data)
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()["result"]["name"] == category_patch_data["name"]
+    assert (
+        response.json()["result"]["description"] == category_patch_data["description"]
+    )
+    assert response.json()["result"]["is_active"] == category_patch_data["is_active"]
+    assert response.json()["result"]["id"] == category.id
+    assert "created_at" in response.json()["result"]
+    assert "updated_at" in response.json()["result"]
+
+
+def test_check_category_name_exists(session):
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    category_data = {"name": category.name}
+
+    check_category_name_exists(category_data["name"], session, category.id)
+
+    with pytest.raises(CategoryNameAlreadyExists):
+        check_category_name_exists(category_data["name"], session)
+
+
+def test_check_category_exists(session):
+    random_id = "56f0572c-1dec-4b4d-b517-4cac967146a7"
+
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    category_checked = check_category_exists(category.id, session)
+    assert category_checked.id == category.id
+    assert category_checked.name == category.name
+
+    with pytest.raises(ResourceNotFound):
+        check_category_exists(random_id, session)

@@ -9,6 +9,7 @@ from ...core.database import get_session
 from ...models.item import (
     ItemCreateRequest,
     ItemListResponse,
+    ItemPatchRequest,
     ItemResponse,
     ItemUpdateRequest,
 )
@@ -17,6 +18,7 @@ from ...models.validators import validate_uuid_value
 from ...services.item import (
     create_item,
     delete_item,
+    patch_item,
     read_item,
     read_items,
     update_item,
@@ -33,9 +35,7 @@ router = APIRouter(prefix="/item", tags=["item"])
 )
 async def read_items_endpoint(
     page: int = Query(1, ge=1, description="Page number"),
-    page_size: int = Query(
-        10, ge=1, le=100, description="Number of items per page"
-    ),
+    page_size: int = Query(10, ge=1, le=100, description="Number of items per page"),
     session: Session = Depends(get_session),
 ) -> ItemListResponse:
     return read_items(page=page, page_size=page_size, session=session)
@@ -92,3 +92,21 @@ async def delete_item_endpoint(
     session: Session = Depends(get_session),
 ) -> ResourceDeletedMessage:
     return delete_item(item_id=item_id, session=session)
+
+
+@router.patch(
+    "/{item_id}",
+    status_code=HTTPStatus.OK,
+    response_model=ItemResponse,
+    summary="Patch one or more parameters of an item",
+)
+async def patch_item_endpoint(
+    item_id: Annotated[str, AfterValidator(validate_uuid_value)],
+    body: ItemPatchRequest,
+    session: Session = Depends(get_session),
+) -> ItemResponse:
+    return patch_item(
+        item_id=item_id,
+        body=body,
+        session=session,
+    )

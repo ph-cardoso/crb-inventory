@@ -1,10 +1,16 @@
 from http import HTTPStatus
 
+import pytest
+
 from crb_inventory.models.exceptions.item import ItemNameAlreadyExists
 from crb_inventory.models.exceptions.resource import (
     ResourceNotFound,
 )
 from crb_inventory.models.utils import AppResource
+from crb_inventory.services.item import (
+    check_item_exists,
+    check_item_name_exists,
+)
 from tests.factories import CategoryFactory, ItemFactory
 
 
@@ -115,13 +121,9 @@ def test_create_item_should_return_201_and_generated_data(client, session):
     assert response.json()["result"]["is_active"] is True
     assert response.json()["result"]["category_id"] == category.id
     assert (
-        response.json()["result"]["minimum_threshold"]
-        == item_data["minimum_threshold"]
+        response.json()["result"]["minimum_threshold"] == item_data["minimum_threshold"]
     )
-    assert (
-        response.json()["result"]["stock_quantity"]
-        == item_data["stock_quantity"]
-    )
+    assert response.json()["result"]["stock_quantity"] == item_data["stock_quantity"]
     assert "id" in response.json()["result"]
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
@@ -146,10 +148,7 @@ def test_read_item_should_return_200_and_generated_data(session, client):
     assert response.json()["result"]["is_active"] == item.is_active
     assert response.json()["result"]["id"] == item.id
     assert response.json()["result"]["category_id"] == item.category_id
-    assert (
-        response.json()["result"]["minimum_threshold"]
-        == item.minimum_threshold
-    )
+    assert response.json()["result"]["minimum_threshold"] == item.minimum_threshold
     assert response.json()["result"]["stock_quantity"] == item.stock_quantity
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
@@ -182,13 +181,9 @@ def test_update_item_should_return_200_and_updated_data(session, client):
     assert response.json()["result"]["is_active"] == item_data["is_active"]
     assert response.json()["result"]["category_id"] == item_data["category_id"]
     assert (
-        response.json()["result"]["minimum_threshold"]
-        == item_data["minimum_threshold"]
+        response.json()["result"]["minimum_threshold"] == item_data["minimum_threshold"]
     )
-    assert (
-        (response.json()["result"]["stock_quantity"])
-        == item_data["stock_quantity"]
-    )
+    assert (response.json()["result"]["stock_quantity"]) == item_data["stock_quantity"]
     assert response.json()["result"]["id"] == item.id
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
@@ -271,3 +266,77 @@ def test_item_name_already_exists_exception_should_return_422(session, client):
     assert response.json()["detail"] == exception.detail
     assert response.headers["X-Error-Code"] == exception.error_code
     assert response.json()["url"] == route
+
+
+def test_check_item_name_exists(session):
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    item = ItemFactory(category_id=category.id)
+    session.add(item)
+    session.commit()
+
+    item_data = {"name": item.name}
+
+    check_item_name_exists(item_data["name"], session, item.id)
+    with pytest.raises(ItemNameAlreadyExists):
+        check_item_name_exists(item_data["name"], session)
+
+
+def test_check_item_exists(session):
+    random_id = "56f0572c-1dec-4b4d-b517-4cac967146a7"
+
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    item = ItemFactory(category_id=category.id)
+    session.add(item)
+    session.commit()
+
+    item_checked = check_item_exists(item.id, session)
+    assert item_checked.id == item.id
+    assert item_checked.name == item.name
+
+    with pytest.raises(ResourceNotFound):
+        check_item_exists(random_id, session)
+
+
+def test_patch_item_should_return_200_and_updated_item(session, client):
+    route = "/v1/item/"
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    item = ItemFactory(category_id=category.id)
+    session.add(item)
+    session.commit()
+
+    item_patch_data = {
+        "name": "Item 1 patched",
+        "description": "Item 1 description patched",
+        "is_active": False,
+        "category_id": item.category_id,
+        "minimum_threshold": 10,
+        "stock_quantity": 20,
+    }
+
+    response = client.patch(f"{route}{item.id}", json=item_patch_data)
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()["result"]["name"] == item_patch_data["name"]
+    assert response.json()["result"]["description"] == item_patch_data["description"]
+    assert response.json()["result"]["is_active"] == item_patch_data["is_active"]
+    assert response.json()["result"]["category_id"] == item.category_id
+    assert (
+        response.json()["result"]["minimum_threshold"]
+        == item_patch_data["minimum_threshold"]
+    )
+    assert (
+        (response.json()["result"]["stock_quantity"])
+        == item_patch_data["stock_quantity"]
+    )
+    assert response.json()["result"]["id"] == item.id
+    assert "created_at" in response.json()["result"]
+    assert "updated_at" in response.json()["result"]

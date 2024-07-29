@@ -34,3 +34,9 @@ class CategoryUpdateRequest(BaseModel):
     name: str
     description: Optional[str] = None
     is_active: bool
+
+
+class CategoryPatchRequest(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    is_active: Optional[bool] = None

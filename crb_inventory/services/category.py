@@ -5,6 +5,7 @@ from ..database_schema import Category
 from ..models.category import (
     CategoryCreateRequest,
     CategoryListResponse,
+    CategoryPatchRequest,
     CategoryResponse,
     CategoryUpdateRequest,
 )
@@ -54,13 +55,7 @@ def read_category(
     category_id: str,
     session: Session,
 ) -> CategoryResponse:
-    category_query = select(Category).where(Category.id == category_id)
-    category = session.scalar(category_query)
-
-    if not category:
-        raise ResourceNotFound(
-            resource=AppResource.CATEGORY
-        )  # pragma: no cover
+    category = check_category_exists(category_id=category_id, session=session)
 
     return CategoryResponse(result=category)
 
@@ -69,11 +64,7 @@ def create_category(
     body: CategoryCreateRequest,
     session: Session,
 ) -> CategoryResponse:
-    category_query_by_name = select(Category).where(Category.name == body.name)
-    category_by_name = session.scalar(category_query_by_name)
-
-    if category_by_name:
-        raise CategoryNameAlreadyExists()  # pragma: no cover
+    check_category_name_exists(name=body.name, session=session)
 
     category = Category(
         id=generate_uuid_v7(),
@@ -93,21 +84,11 @@ def update_category(
     body: CategoryUpdateRequest,
     session: Session,
 ) -> CategoryResponse:
-    category_query = select(Category).where(Category.id == category_id)
-    category = session.scalar(category_query)
+    category = check_category_exists(category_id=category_id, session=session)
 
-    if not category:
-        raise ResourceNotFound(
-            resource=AppResource.CATEGORY
-        )  # pragma: no cover
-
-    category_query_by_name = select(Category).where(
-        Category.name == body.name and Category.id != category_id
+    check_category_name_exists(
+        name=body.name, session=session, previous_category_id=category_id
     )
-    category_by_name = session.scalar(category_query_by_name)
-
-    if category_by_name:
-        raise CategoryNameAlreadyExists()  # pragma: no cover
 
     category.name = body.name
     category.description = body.description
@@ -123,17 +104,62 @@ def delete_category(
     category_id: str,
     session: Session,
 ) -> ResourceDeletedMessage:
-    category_query = select(Category).where(Category.id == category_id)
-    category = session.scalar(category_query)
-
-    if not category:
-        raise ResourceNotFound(
-            resource=AppResource.CATEGORY
-        )  # pragma: no cover
+    category = check_category_exists(category_id=category_id, session=session)
 
     session.delete(category)
     session.commit()
 
-    return ResourceDeletedMessage(
-        id=category.id, resource=AppResource.CATEGORY
-    )
+    return ResourceDeletedMessage(id=category.id, resource=AppResource.CATEGORY)
+
+
+def patch_category(
+    category_id: str,
+    body: CategoryPatchRequest,
+    session: Session,
+) -> CategoryResponse:
+    category = check_category_exists(category_id=category_id, session=session)
+
+    if body.name is not None:
+        check_category_name_exists(
+            name=body.name, session=session, previous_category_id=category_id
+        )
+        category.name = body.name
+
+    if body.description is not None:
+        category.description = body.description
+
+    if body.is_active is not None:
+        category.is_active = body.is_active
+
+    session.commit()
+    session.refresh(category)
+
+    return CategoryResponse(result=category)
+
+
+def check_category_name_exists(
+    name: str,
+    session: Session,
+    previous_category_id: str = None,
+):
+    category_query = select(Category).where(Category.name == name)
+    category = session.scalar(category_query)
+
+    if category:
+        if previous_category_id and category.id == previous_category_id:
+            return
+
+        raise CategoryNameAlreadyExists()
+
+
+def check_category_exists(
+    category_id: str,
+    session: Session,
+) -> Category:
+    category_query = select(Category).where(Category.id == category_id)
+    category = session.scalar(category_query)
+
+    if not category:
+        raise ResourceNotFound(resource=AppResource.CATEGORY)
+
+    return category
