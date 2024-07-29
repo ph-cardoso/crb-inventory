@@ -26,24 +26,6 @@ item_tag_association = Table(
     ),
 )
 
-item_custom_field_association = Table(
-    "item_custom_field_association",
-    mapper_registry.metadata,
-    Column(
-        "item_id",
-        PG_UUID(as_uuid=False),
-        ForeignKey("item.id"),
-        primary_key=True,
-    ),
-    Column(
-        "custom_field_id",
-        PG_UUID(as_uuid=False),
-        ForeignKey("custom_field.id"),
-        primary_key=True,
-    ),
-    Column("value", TEXT),
-)
-
 
 # category table
 @mapper_registry.mapped_as_dataclass
@@ -90,30 +72,6 @@ class Tag:
     )
 
 
-# custom_fields table
-@mapper_registry.mapped_as_dataclass
-class CustomField:
-    __tablename__ = "custom_field"
-    id: Mapped[str] = mapped_column(PG_UUID(as_uuid=False), primary_key=True)
-    name: Mapped[str] = mapped_column(TEXT, unique=True, index=True, nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(TEXT, nullable=True)
-    is_active: Mapped[bool] = mapped_column(BOOLEAN, init=False, server_default="true")
-    created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), init=False, server_default=func.now()
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True),
-        init=False,
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
-    items: Mapped[List["Item"]] = relationship(
-        secondary=item_custom_field_association,
-        back_populates="custom_fields",
-        init=False,
-    )
-
-
 # item table
 @mapper_registry.mapped_as_dataclass
 class Item:
@@ -139,9 +97,4 @@ class Item:
     )
     tags: Mapped[List["Tag"]] = relationship(
         secondary=item_tag_association, back_populates="items", init=False
-    )
-    custom_fields: Mapped[List["CustomField"]] = relationship(
-        secondary=item_custom_field_association,
-        back_populates="items",
-        init=False,
     )

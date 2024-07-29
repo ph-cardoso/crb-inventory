@@ -7,7 +7,6 @@ from pydantic import BaseModel
 class AppResource(Enum):
     CATEGORY = "category"
     TAG = "tag"
-    CUSTOM_FIELD = "custom_field"
     ITEM = "item"
 
 

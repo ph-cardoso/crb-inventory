@@ -17,26 +17,6 @@ def validate_uuid_value(value: str) -> str:
     return value
 
 
-def validate_custom_field_name_value(value: str) -> str:
-    max_custom_field_length = 30
-    regex = r"^[a-z0-9]+(_[a-z0-9]+)*$"
-
-    if len(value) > max_custom_field_length:
-        raise ValueError(
-            "value should have a max length of "
-            + str(max_custom_field_length)
-            + " characters"
-        )
-
-    if not re.match(regex, value):
-        raise ValueError(
-            "value should be in the format of lowercase alphanumeric "
-            "characters separated by underscores"
-        )
-
-    return value
-
-
 def validate_tag_name_value(value: str) -> str:
     max_tag_length = 50
     regex = r"^[a-z0-9]+(-[a-z0-9]+)*$"
