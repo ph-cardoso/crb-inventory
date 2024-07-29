@@ -8,9 +8,9 @@ from .settings import AppSettings
 
 APP_DATA = {
     "name": "CRB Inventory API",
-    "description": "API para gestão de inventário",
+    "description": "API para gestão de inventário da CRB",
     "version_v1": "1.0.0",
-    "latest_version": "0.1.0",
+    "latest_version": "1.0.0",
     "docs": "/docs",
     "docs_v1": "/v1/docs",
 }

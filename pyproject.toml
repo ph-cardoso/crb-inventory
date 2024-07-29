@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "crb-inventory"
-version = "0.1.0"
-description = ""
+version = "1.0.0"
+description = "REST API de gestão do inventário da CRB"
 authors = ["ph-cardoso <phlc.cardoso@gmail.com>"]
 readme = "README.md"
 license = "MIT"
@@ -54,7 +54,9 @@ test = 'pytest -s -x --cov=crb_inventory -vv'
 post_test = 'coverage html'
 local-env-up = 'docker compose --env-file .env -f compose.yml up -d'
 local-env-down = 'docker compose --env-file .env -f compose.yml down'
-clean = "rm -rf .coverage htmlcov .ruff_cache **/__pycache__"
+local-env-down-v = 'docker compose --env-file .env -f compose.yml down -v'
+clean = "rm -rf .coverage .pytest_cache htmlcov .ruff_cache"
+migrate = 'alembic upgrade head'
 
 [build-system]
 requires = ["poetry-core"]
