@@ -3,6 +3,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
+from crb_inventory.database_schema import Tag
+
 from ..models.validators import validate_positive_value, validate_uuid_value
 
 
@@ -78,3 +80,20 @@ class ItemPatchRequest(BaseModel):
     _validate_uuid_value = field_validator("category_id", mode="after")(
         validate_uuid_value
     )
+
+
+class ItemTagAddMessage(BaseModel):
+    message: Optional[str] = "Tag added to item."
+    tag_id: str
+    item_id: str
+
+
+class ItemTagDeleteMessage(BaseModel):
+    message: Optional[str] = "Tag deleted from item."
+    tag_id: str
+    item_id: str
+
+
+class ItemTagListResponse(BaseModel):
+    result: List[Tag]
+    total: int

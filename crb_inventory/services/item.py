@@ -1,14 +1,23 @@
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from ..database_schema import Item
-from ..models.exceptions.item import ItemNameAlreadyExists
+from crb_inventory.services.tag import check_tag_exists
+
+from ..database_schema import Item, Tag
+from ..models.exceptions.item import (
+    ItemNameAlreadyExists,
+    TagAlreadyAssociatedWithItem,
+    TagNotAssociatedWithItem,
+)
 from ..models.exceptions.resource import ResourceNotFound
 from ..models.item import (
     ItemCreateRequest,
     ItemListResponse,
     ItemPatchRequest,
     ItemResponse,
+    ItemTagAddMessage,
+    ItemTagDeleteMessage,
+    ItemTagListResponse,
     ItemUpdateRequest,
 )
 from ..models.utils import AppResource, ResourceDeletedMessage
@@ -183,3 +192,54 @@ def check_item_exists(
         raise ResourceNotFound(resource=AppResource.ITEM)
 
     return item
+
+
+def read_item_tags(
+    item_id: str,
+    session: Session,
+) -> ItemTagListResponse:
+    item = check_item_exists(item_id, session)
+
+    return ItemTagListResponse(result=item.tags, total=len(item.tags))
+
+
+def add_tag_to_item(
+    item_id: str,
+    tag_id: str,
+    session: Session,
+) -> ItemTagAddMessage:
+    item = check_item_exists(item_id, session)
+    tag = check_tag_exists(tag_id, session)
+
+    check_tag_not_associated_with_item(item, tag)
+
+    item.tags.append(tag)
+    session.commit()
+
+    return ItemTagAddMessage(item_id=item.id, tag_id=tag.id)
+
+
+def delete_tag_from_item(
+    item_id: str,
+    tag_id: str,
+    session: Session,
+) -> ItemTagDeleteMessage:
+    item = check_item_exists(item_id, session)
+    tag = check_tag_exists(tag_id, session)
+
+    check_tag_is_associated_with_item(item, tag)
+
+    item.tags.remove(tag)
+    session.commit()
+
+    return ItemTagDeleteMessage(item_id=item.id, tag_id=tag.id)
+
+
+def check_tag_is_associated_with_item(item: Item, tag: Tag):
+    if tag not in item.tags:
+        raise TagNotAssociatedWithItem(tag_id=tag.id, item_id=item.id)
+
+
+def check_tag_not_associated_with_item(item: Item, tag: Tag):
+    if tag in item.tags:
+        raise TagAlreadyAssociatedWithItem(tag_id=tag.id, item_id=item.id)

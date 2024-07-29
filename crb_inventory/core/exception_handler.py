@@ -2,7 +2,11 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from ..models.exceptions.category import CategoryNameAlreadyExists
-from ..models.exceptions.item import ItemNameAlreadyExists
+from ..models.exceptions.item import (
+    ItemNameAlreadyExists,
+    TagAlreadyAssociatedWithItem,
+    TagNotAssociatedWithItem,
+)
 from ..models.exceptions.resource import ResourceNotFound
 from ..models.exceptions.tag import TagNameAlreadyExists
 
@@ -68,6 +72,36 @@ def include_exceptions(app: FastAPI):
                 "exc": exc.__class__.__name__,
                 "error_code": exc.error_code,
                 "detail": exc.detail,
+                "url": request.url.path,
+            },
+            headers={"X-Error-Code": exc.error_code},
+        )
+
+    @app.exception_handler(TagNotAssociatedWithItem)
+    async def tag_not_associated_with_item_handler(request, exc):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "exc": exc.__class__.__name__,
+                "error_code": exc.error_code,
+                "detail": exc.detail,
+                "tag_id": exc.tag_id,
+                "item_id": exc.item_id,
+                "url": request.url.path,
+            },
+            headers={"X-Error-Code": exc.error_code},
+        )
+
+    @app.exception_handler(TagAlreadyAssociatedWithItem)
+    async def tag_already_associated_with_item_handler(request, exc):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "exc": exc.__class__.__name__,
+                "error_code": exc.error_code,
+                "detail": exc.detail,
+                "tag_id": exc.tag_id,
+                "item_id": exc.item_id,
                 "url": request.url.path,
             },
             headers={"X-Error-Code": exc.error_code},

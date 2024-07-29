@@ -24,6 +24,17 @@ item_tag_association = Table(
         ForeignKey("tag.id"),
         primary_key=True,
     ),
+    Column(
+        "created_at",
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+    ),
+    Column(
+        "updated_at",
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+    ),
 )
 
 

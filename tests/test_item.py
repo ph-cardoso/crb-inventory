@@ -2,7 +2,11 @@ from http import HTTPStatus
 
 import pytest
 
-from crb_inventory.models.exceptions.item import ItemNameAlreadyExists
+from crb_inventory.models.exceptions.item import (
+    ItemNameAlreadyExists,
+    TagAlreadyAssociatedWithItem,
+    TagNotAssociatedWithItem,
+)
 from crb_inventory.models.exceptions.resource import (
     ResourceNotFound,
 )
@@ -11,7 +15,7 @@ from crb_inventory.services.item import (
     check_item_exists,
     check_item_name_exists,
 )
-from tests.factories import CategoryFactory, ItemFactory
+from tests.factories import CategoryFactory, ItemFactory, TagFactory
 
 
 def test_read_items_should_return_6(session, client):
@@ -340,3 +344,130 @@ def test_patch_item_should_return_200_and_updated_item(session, client):
     assert response.json()["result"]["id"] == item.id
     assert "created_at" in response.json()["result"]
     assert "updated_at" in response.json()["result"]
+
+
+def test_add_tag_to_item_should_return_201_and_message(session, client):
+    route = "/v1/item/"
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    item = ItemFactory(category_id=category.id)
+    session.add(item)
+    session.commit()
+
+    tag = TagFactory()
+    session.add(tag)
+    session.commit()
+
+    response = client.post(f"{route}{item.id}/tag/{tag.id}")
+
+    assert response.status_code == HTTPStatus.CREATED
+    assert response.json()["message"] == "Tag added to item."
+    assert response.json()["tag_id"] == tag.id
+    assert response.json()["item_id"] == item.id
+
+
+def test_delete_tag_from_item_should_return_200_and_message(session, client):
+    route = "/v1/item/"
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    item = ItemFactory(category_id=category.id)
+    session.add(item)
+    session.commit()
+
+    tag = TagFactory()
+    session.add(tag)
+    session.commit()
+
+    item.tags.append(tag)
+    session.commit()
+
+    response = client.delete(f"{route}{item.id}/tag/{tag.id}")
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()["message"] == "Tag deleted from item."
+    assert response.json()["tag_id"] == tag.id
+    assert response.json()["item_id"] == item.id
+    assert tag not in item.tags
+
+
+def test_read_tags_from_item_should_return_200_and_tags(session, client):
+    route = "/v1/item/"
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    item = ItemFactory(category_id=category.id)
+    session.add(item)
+    session.commit()
+
+    tag = TagFactory()
+    session.add(tag)
+    session.commit()
+
+    item.tags.append(tag)
+    session.commit()
+
+    response = client.get(f"{route}{item.id}/tag")
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.json()["total"] == 1
+    assert response.json()["result"][0]["id"] == tag.id
+    assert response.json()["result"][0]["name"] == tag.name
+    assert response.json()["result"][0]["description"] == tag.description
+
+
+def test_delete_tag_not_associated_with_item_should_return_422(session, client):
+    route = "/v1/item/"
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    item = ItemFactory(category_id=category.id)
+    session.add(item)
+    session.commit()
+
+    tag = TagFactory()
+    session.add(tag)
+    session.commit()
+
+    exception = TagNotAssociatedWithItem(tag_id=tag.id, item_id=item.id)
+
+    response = client.delete(f"{route}{item.id}/tag/{tag.id}")
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.json()["exc"] == exception.__class__.__name__
+    assert response.json()["detail"] == exception.detail
+    assert response.headers["X-Error-Code"] == exception.error_code
+    assert response.json()["url"] == f"{route}{item.id}/tag/{tag.id}"
+
+
+def test_add_tag_already_associated_with_item_should_return_422(session, client):
+    route = "/v1/item/"
+    category = CategoryFactory()
+    session.add(category)
+    session.commit()
+
+    item = ItemFactory(category_id=category.id)
+    session.add(item)
+    session.commit()
+
+    tag = TagFactory()
+    session.add(tag)
+    session.commit()
+
+    item.tags.append(tag)
+    session.commit()
+
+    exception = TagAlreadyAssociatedWithItem(tag_id=tag.id, item_id=item.id)
+
+    response = client.post(f"{route}{item.id}/tag/{tag.id}")
+
+    assert response.status_code == HTTPStatus.UNPROCESSABLE_ENTITY
+    assert response.json()["exc"] == exception.__class__.__name__
+    assert response.json()["detail"] == exception.detail
+    assert response.headers["X-Error-Code"] == exception.error_code
+    assert response.json()["url"] == f"{route}{item.id}/tag/{tag.id}"
